@@ -5,13 +5,15 @@
 # @raycast.title Type Clipboard
 # @raycast.mode silent
 # @raycast.packageName Helpers
-# @raycast.description Waits 1 second then types clipboard into the focused field (slower, chunked; no mouse clicks).
+# @raycast.description Waits 1 second then types clipboard into the focused field (slow, character-by-character; no mouse clicks).
 # @raycast.author You
 # @raycast.authorURL https://raycast.com
 
 -- Settings
 set openChat to false -- IMPORTANT: prevents the leading "t"
 set startDelay to 1.0
+set typeByCharacter to true
+set perCharacterDelay to 0.01
 set perLineDelay to 0.02
 set chunkLongLines to true
 set maxChunkLength to 80
@@ -34,19 +36,32 @@ tell application "System Events"
         set lineText to item lineIndex of lineList
 
         if lineText is not "" then
-            if chunkLongLines and (count of characters of lineText) > maxChunkLength then
+            if typeByCharacter then
                 set lineLen to (count of characters of lineText)
-                set pos to 1
-                repeat while pos is less than or equal to lineLen
-                    set endPos to pos + maxChunkLength - 1
-                    if endPos > lineLen then set endPos to lineLen
-                    keystroke (text pos thru endPos of lineText)
-                    if perChunkDelay > 0 then delay perChunkDelay
-                    set pos to endPos + 1
+                repeat with charIndex from 1 to lineLen
+                    set ch to character charIndex of lineText as text
+                    if ch is tab then
+                        key code 48 -- Tab
+                    else
+                        keystroke ch
+                    end if
+                    if perCharacterDelay > 0 then delay perCharacterDelay
                 end repeat
             else
-                keystroke lineText
-                if perChunkDelay > 0 then delay perChunkDelay
+                if chunkLongLines and (count of characters of lineText) > maxChunkLength then
+                    set lineLen to (count of characters of lineText)
+                    set pos to 1
+                    repeat while pos is less than or equal to lineLen
+                        set endPos to pos + maxChunkLength - 1
+                        if endPos > lineLen then set endPos to lineLen
+                        keystroke (text pos thru endPos of lineText)
+                        if perChunkDelay > 0 then delay perChunkDelay
+                        set pos to endPos + 1
+                    end repeat
+                else
+                    keystroke lineText
+                    if perChunkDelay > 0 then delay perChunkDelay
+                end if
             end if
         end if
 
