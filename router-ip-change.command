@@ -77,6 +77,19 @@ extract_external_ip() {
   echo "$xml" | /usr/bin/tr -d '\n' | /usr/bin/sed -n 's/.*<NewExternalIPAddress>\([^<]*\)<\/NewExternalIPAddress>.*/\1/p'
 }
 
+add_base_url() {
+  local candidate="$1"
+  local existing
+
+  for existing in "${base_urls[@]}"; do
+    if [[ "$existing" == "$candidate" ]]; then
+      return 0
+    fi
+  done
+
+  base_urls+=("$candidate")
+}
+
 : "${FRITZ_HOST:=fritz.box}"
 : "${FRITZ_KEYCHAIN_SERVICE:=raycast-fritzbox}"
 
@@ -97,9 +110,11 @@ fi
 
 declare -a base_urls=()
 if [[ -n "${FRITZ_URL:-}" ]]; then
-  base_urls+=("$FRITZ_URL")
+  add_base_url "$FRITZ_URL"
 else
-  base_urls+=("https://${FRITZ_HOST}:49443" "http://${FRITZ_HOST}:49000")
+  add_base_url "https://${FRITZ_HOST}:49443"
+  add_base_url "http://${FRITZ_HOST}:49000"
+  add_base_url "http://192.168.178.1:49000"
 fi
 
 declare -a targets=(
@@ -110,7 +125,14 @@ declare -a targets=(
 )
 
 echo "FRITZ!Box WAN-Reconnect…"
-echo "Host: ${FRITZ_HOST}"
+if [[ -n "${FRITZ_URL:-}" ]]; then
+  echo "URL: ${FRITZ_URL}"
+else
+  echo "Host: ${FRITZ_HOST}"
+  if [[ "${FRITZ_HOST}" != "192.168.178.1" ]]; then
+    echo "HTTP-Fallback: 192.168.178.1:49000"
+  fi
+fi
 if [[ -z "${FRITZ_USER:-}" ]]; then
   echo "Modus: ohne Login (UPnP/IGD, falls erlaubt)"
 else
