@@ -79,13 +79,11 @@ extract_external_ip() {
 
 add_base_url() {
   local candidate="$1"
-  local existing
+  local existing_urls="${base_urls[*]-}"
 
-  for existing in "${base_urls[@]}"; do
-    if [[ "$existing" == "$candidate" ]]; then
-      return 0
-    fi
-  done
+  if [[ " ${existing_urls} " == *" ${candidate} "* ]]; then
+    return 0
+  fi
 
   base_urls+=("$candidate")
 }
